@@ -1,8 +1,10 @@
+import logging
+from time import time
+
 from pathlib import Path
 import shutil
-import sys
-from threading import Thread
-import logging
+from concurrent.futures import ThreadPoolExecutor
+
 
 import file_parser as parser
 from normalize import normalize
@@ -87,11 +89,13 @@ def main(folder: Path):
         handle_documents(file, folder / 'documents' / 'PDF')
     for file in parser.XLSX_DOCUMENTS:
         handle_documents(file, folder / 'documents' / 'XLSX')
+    for file in parser.XLS_DOCUMENTS:
+        handle_documents(file, folder / 'documents' / 'XLS')
     for file in parser.PPTX_DOCUMENTS:
         handle_documents(file, folder / 'documents' / 'PPTX')
 
     for file in parser.OTHER:
-        handle_other(file, folder / 'MY_OTHER')
+        handle_other(file, folder / 'OTHER')
 
     for file in parser.ARCHIVES:
         handle_archives(file, folder / 'archives')
@@ -100,18 +104,23 @@ def main(folder: Path):
         handle_folder(folder)
 
 
+def start():
+    while True:
+        folder_for_scan = input('Enter folder for scan: ')
+        if folder_for_scan:
+            folder_for_scan = Path(folder_for_scan)
+            print(f'Start in folder {folder_for_scan.resolve()}')
+            main(folder_for_scan.resolve())
+            print('Successfully!')
+        else:
+            input('Press Enter to exit...')
+            break
+
+
 if __name__ == '__main__':
-    if sys.argv[1]:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(message)s')
-        folder_for_scan = Path(sys.argv[1])
-
-        for i in range(4):
-            thread = Thread(target=parser.scan, args=(folder_for_scan,))
-            thread.start()
-            logging.info(f'Thread {thread.name} started in {folder_for_scan.resolve()}')
-
-        main(folder_for_scan.resolve())
-
-
-
-
+    start()
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(message)s')
+    time_start = time()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        executor.map(parser.scan, parser.FOLDERS)
+        logging.info(f'Sorting time: {round(time() - time_start,4)} seconds')

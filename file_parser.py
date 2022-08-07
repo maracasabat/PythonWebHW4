@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+
 JPEG_IMAGES = []
 JPG_IMAGES = []
 PNG_IMAGES = []
@@ -18,10 +19,10 @@ DOCX_DOCUMENTS = []
 TXT_DOCUMENTS = []
 PDF_DOCUMENTS = []
 XLSX_DOCUMENTS = []
+XLS_DOCUMENTS = []
 PPTX_DOCUMENTS = []
 OTHER = []
 ARCHIVES = []
-
 
 REGISTER_EXTENSIONS = {
     'JPEG': JPEG_IMAGES,
@@ -41,6 +42,7 @@ REGISTER_EXTENSIONS = {
     'TXT': TXT_DOCUMENTS,
     'PDF': PDF_DOCUMENTS,
     'XLSX': XLSX_DOCUMENTS,
+    'XLS': XLS_DOCUMENTS,
     'PPTX': PPTX_DOCUMENTS,
     'ZIP': ARCHIVES,
     'GZ': ARCHIVES,
@@ -53,30 +55,30 @@ UNKNOWN = set()
 
 
 def get_extensions(filename: str) -> str:
-
     return Path(filename).suffix[1:].upper()
 
 
-def scan(folder: Path) -> None:
-    for item in folder.iterdir():
+def scan(folder: Path):
+
+    for item in folder.glob('**/*'):
         if item.is_dir():
-            if item.name not in ('archives', 'video', 'audio', 'documents', 'images', 'OTHER'):
+            if item.name not in ('images', 'video', 'documents', 'music', 'archive', 'other'):
                 FOLDERS.append(item)
                 scan(item)
             continue
-
-        ext = get_extensions(item.name)
-        fullname = folder / item.name
-        if not ext:
-            OTHER.append(fullname)
         else:
-            try:
-                container = REGISTER_EXTENSIONS[ext]
-                EXTENSIONS.add(ext)
-                container.append(fullname)
-            except KeyError:
-                UNKNOWN.add(ext)
+            ext = get_extensions(item.name)
+            fullname = folder / item.name
+            if not ext:
                 OTHER.append(fullname)
+            else:
+                try:
+                    container = REGISTER_EXTENSIONS[ext]
+                    EXTENSIONS.add(ext)
+                    container.append(fullname)
+                except KeyError:
+                    UNKNOWN.add(ext)
+                    OTHER.append(fullname)
 
 
 if __name__ == '__main__':
@@ -84,5 +86,13 @@ if __name__ == '__main__':
     print(f'Start in folder {folder_for_scan}')
 
     scan(Path(folder_for_scan))
+    print(f'Images jpeg: {JPEG_IMAGES}')
+    print(f'Images jpg: {JPG_IMAGES}')
+    print(f'Images svg: {SVG_IMAGES}')
+    print(f'Audio mp3: {MP3_AUDIO}')
+    print(f'Archives: {ARCHIVES}')
+
+    print(f'Types of files in folder: {EXTENSIONS}')
+    print(f'Unknown files of types: {UNKNOWN}')
 
     print(FOLDERS[::-1])
